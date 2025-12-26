@@ -8,10 +8,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Connect Tailscale
+      - name: Connect Tailscale (OAuth Method)
         uses: tailscale/github-action@v3
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github # Recommended for OAuth
 
       - name: Setup User and RDP
         run: |
@@ -29,7 +31,7 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           
-          # 5. Allow Copy-Paste and Drive Sharing (Clipboard Redirection)
+          # 5. Allow Copy-Paste (Clipboard Redirection)
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "fDisableClip" -Value 0
           
           Write-Host "--- SETUP COMPLETE ---"
