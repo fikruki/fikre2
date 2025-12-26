@@ -1,4 +1,4 @@
-name: Windows-RDP-Permanent
+name: Windows-RDP-Auto-Shutdown
 on: workflow_dispatch
 
 jobs:
@@ -8,37 +8,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Connect Tailscale (OAuth Method)
+      - name: Connect Tailscale
         uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:github # Recommended for OAuth
+          tags: tag:github
 
       - name: Setup User and RDP
         run: |
-          # 1. Create the Password
           $Password = ConvertTo-SecureString "Fikru417@4" -AsPlainText -Force
-          
-          # 2. Create the User 'RDPUser'
-          New-LocalUser "RDPUser" -Password $Password -FullName "Remote User" -Description "Permanent Access"
-          
-          # 3. Add to Admin and Remote Desktop Groups
+          New-LocalUser "RDPUser" -Password $Password -Description "Access"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDPUser"
           Add-LocalGroupMember -Group "Administrators" -Member "RDPUser"
-          
-          # 4. Open Firewall and Enable RDP
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          
-          # 5. Allow Copy-Paste (Clipboard Redirection)
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "fDisableClip" -Value 0
-          
-          Write-Host "--- SETUP COMPLETE ---"
-          Write-Host "User: RDPUser"
-          Write-Host "Pass: Fikru417@4"
 
-      - name: Keep Alive (6 Hours)
+      - name: Wait for 6 Hours
         run: |
-          Write-Host "Connect using your Tailscale IP now."
-          while($true) { Start-Sleep -Seconds 60 }
+          Write-Host "Connect now. Machine will auto-destruct in 6 hours."
+          # Instead of a loop, we just tell the system to wait for 21600 seconds
+          Start-Sleep -Seconds 21600
