@@ -1,31 +1,44 @@
-name: Windows-RDP-Auto-Shutdown
-on: workflow_dispatch
+name: Windows-RDP-OAuth
+on: 
+  workflow_dispatch: # Allows you to start it manually
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Connect Tailscale
+      - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:github
 
-      - name: Setup User and RDP
+      - name: Configure Windows & RDP
         run: |
+          # 1. Setup Password and User
           $Password = ConvertTo-SecureString "Fikru417@4" -AsPlainText -Force
-          New-LocalUser "RDPUser" -Password $Password -Description "Access"
+          New-LocalUser "RDPUser" -Password $Password -Description "Remote Desktop"
+          
+          # 2. Add User to Required Groups
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDPUser"
           Add-LocalGroupMember -Group "Administrators" -Member "RDPUser"
+          
+          # 3. Enable Remote Desktop and Open Firewall
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          
+          # 4. Enable Clipboard (Copy-Paste)
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "fDisableClip" -Value 0
+          
+          Write-Host "Ready to connect!"
+          Write-Host "User: RDPUser"
+          Write-Host "Pass: Fikru417@4"
 
-      - name: Wait for 6 Hours
+      - name: Wait for Connection (6 Hour Limit)
         run: |
-          Write-Host "Connect now. Machine will auto-destruct in 6 hours."
-          # Instead of a loop, we just tell the system to wait for 21600 seconds
+          Write-Host "Get the IP from your Tailscale Admin Console."
+          # Keeps the machine alive for 6 hours (21600 seconds)
           Start-Sleep -Seconds 21600
